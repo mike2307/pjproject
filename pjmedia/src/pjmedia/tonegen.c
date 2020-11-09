@@ -243,23 +243,15 @@
     #define GEN_INIT(var,R,F,A) \
 	var.Cn = (DATA)(cos(2.0 * M_PI * (DATA)F / (DATA)R)); \
 	var.Sn = (DATA)(sin(2.0 * M_PI * (DATA)F / (DATA)R)); \
-	var.x1 = 0.0;                                         \
-	var.x2 = (DATA)(A)
+	var.x1 = 0.0;					      \
+	var.x2 = (DATA)(A);
 
     #define GEN_SAMP(val,var) \
-	var.x1_prev = var.x1;                                 \
+	var.x1_prev = var.x1;				      \
 	var.x1 =  (var.Cn * var.x1_prev) + (var.Sn * var.x2); \
 	var.x2 = -(var.Sn * var.x1_prev) + (var.Cn * var.x2); \
-	                                                      \
-	if (var.x1 > 32767.0) {                               \
-	    val = 32767;                                      \
-	}                                                     \
-	else if (var.x1 < -32768.0) {                         \
-	    val = -32768;                                     \
-	}                                                     \
-	else {                                                \
-	    val = (short)var.x1;                              \
-	}
+	val = (short)(PJ_MIN(var.x1, 32767.0));		      \
+	val = (short)(PJ_MAX(var.x1, -32768.0));
 
 #else
     #error "PJMEDIA_TONEGEN_ALG is not set correctly"
