@@ -221,6 +221,46 @@
     #define GEN_SAMP(val,var)	val = (short) VOL(var,SIN(var.c)>>16); \
 				var.c += var.add
 
+#elif PJMEDIA_TONEGEN_ALG==PJMEDIA_TONEGEN_FLOATING_POINT_2DR
+    #include <math.h>
+    #define DATA	float
+
+    /*
+     * 2D rotation (2DR) sinusoids generator algorithm:
+     * https://ccrma.stanford.edu/~jos/pasp/Digital_Sinusoid_Generators.html
+     *
+     * Cn => cos(2 * pi * Fn * T)
+     * Sn => sin(2 * pi * Fn * T)
+     *
+     * X1(n) =>  Cn * X1(n-1) + Sn * X2(n-1)
+     * X2(n) => -Sn * X1(n-1) + Cn * X2(n-1)
+     */
+    struct gen
+    {
+	DATA Cn, Sn, x1, x1_prev, x2;
+    };
+
+    #define GEN_INIT(var,R,F,A) \
+	var.Cn = (DATA)(cos(2.0 * M_PI * (DATA)F / (DATA)R)); \
+	var.Sn = (DATA)(sin(2.0 * M_PI * (DATA)F / (DATA)R)); \
+	var.x1 = 0.0;                                         \
+	var.x2 = (DATA)(A)
+
+    #define GEN_SAMP(val,var) \
+	var.x1_prev = var.x1;                                 \
+	var.x1 =  (var.Cn * var.x1_prev) + (var.Sn * var.x2); \
+	var.x2 = -(var.Sn * var.x1_prev) + (var.Cn * var.x2); \
+	                                                      \
+	if (var.x1 > 32767.0) {                               \
+	    val = 32767;                                      \
+	}                                                     \
+	else if (var.x1 < -32768.0) {                         \
+	    val = -32768;                                     \
+	}                                                     \
+	else {                                                \
+	    val = (short)var.x1;                              \
+	}
+
 #else
     #error "PJMEDIA_TONEGEN_ALG is not set correctly"
 #endif
